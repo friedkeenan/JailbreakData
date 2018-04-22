@@ -10,7 +10,7 @@ class DataCollector(threading.Thread):
         self.client_secret=client_secret
         self.client_id=client_id
         self.user_agent=user_agent
-        self.r=praw.Reddit(client_secret=client_secret,client_id=client_id,user_agent=user_agent)
+        self.r=self.new_reddit()
         self.sub=self.r.subreddit(sub)
         self.mod_message=mod_message
         self.folder=folder
@@ -36,14 +36,13 @@ class DataCollector(threading.Thread):
         last=0
         while self.alive:
             try:
-                self.to_check[-1]
+                if self.to_check[-1]["created"]>last:
+                    with open(self.folder+"/to_check.json","w") as f:
+                        stuff=json.dumps(self.to_check,indent=2,sort_keys=True) #Make sure the json looks pretty for my stupid human eyes
+                        f.write(stuff)
+                    last=self.to_check[-1]["created"]
             except IndexError:
-                continue
-            if self.to_check[-1]["created"]>last:
-                with open(self.folder+"/to_check.json","w") as f:
-                    stuff=json.dumps(self.to_check,indent=2,sort_keys=True) #Make sure the json looks pretty for my stupid human eyes
-                    f.write(stuff)
-                last=self.to_check[-1]["created"]
+                pass
             #The next three for loops won't save things in proper json format because it won't have brackets at the ends and will have a hanging comma at the end
             #It was done this way so that it wouldn't have to read the whole file and then write it all again because the file will get big
             #It wasn't done with to_check because items in it need to be removed, which would be tricky and probably not worth it to do efficiently if it weren't in proper json format
@@ -71,7 +70,7 @@ class DataCollector(threading.Thread):
                         break
             except Exception as e: #If Reddit session stops working for whatever reason, renew it
                 print(str(e))
-                self.r=praw.Reddit(client_secret=self.client_secret,client_id=self.client_id,user_agent=self.user_agent)
+                self.r=self.new_reddit()
     def get_submissions(self):
         while self.alive:
             try:
@@ -84,7 +83,7 @@ class DataCollector(threading.Thread):
                         break
             except Exception as e: #If Reddit session stops working for whatever reason, renew it
                 print(str(e))
-                self.r=praw.Reddit(client_secret=self.client_secret,client_id=self.client_id,user_agent=self.user_agent)
+                self.r=self.new_reddit()
     def process_data(self):
         while self.alive:
             try:
@@ -137,9 +136,11 @@ class DataCollector(threading.Thread):
                     self.to_check.remove(i)
             except Exception as e: #If Reddit session stops working for whatever reason, renew it
                 print(str(e))
-                self.r=praw.Reddit(client_secret=self.client_secret,client_id=self.client_id,user_agent=self.user_agent)
+                self.r=self.new_reddit()
     def kill(self): #Will stop all threads
         self.alive=False
+    def new_reddit(self):
+        return praw.Reddit(client_secret=self.client_secret,client_id=self.client_id,user_agent=self.user_agent)
     @staticmethod
     def organize_data(t): #Returns a dictionary of all the important bits of a comment/submission
         try:
