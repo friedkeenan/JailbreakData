@@ -84,7 +84,7 @@ def plot_time_amount():
     hours=list(range(24))
     num={"comments":[0 for x in range(24)],
          "submissions":[0 for x in range(24)]}
-    for t in data["survived"]:
+    for t in data["survived"]+data["deleted"]+data["del_no_reply"]:
         index=int(dt.datetime.fromtimestamp(t["created"]).strftime("%H")) #Get hour from timestamp
         if t["fullname"].startswith("t1_"):
             num["comments"][index]+=1
@@ -99,6 +99,32 @@ def plot_time_amount():
     plt.xlabel("Hour of the day")
     plt.ylabel("Amount")
     plt.title("Amount of Submissions in Each Hour")
+    plt.show()
+def plot_time_score():
+    hours=list(range(24))
+    num={"comments":[0 for x in range(24)],
+         "submissions":[0 for x in range(24)]}
+    score={"comments":[0 for x in range(24)],
+         "submissions":[0 for x in range(24)]}
+    for t in data["survived"]:
+        index=int(dt.datetime.fromtimestamp(t["created"]).strftime("%H")) #Get hour from timestamp
+        if t["fullname"].startswith("t1_"):
+            score["comments"][index]+=t["score"]
+            num["comments"][index]+=1
+        else:
+            score["submissions"][index]+=t["score"]
+            num["submissions"][index]+=1
+    avg_score={"comments":[score["comments"][x]/num["comments"][x] for x in range(24)],
+               "submissions":[score["submissions"][x]/num["submissions"][x] for x in range(24)]}
+    plt.bar(hours,avg_score["comments"])
+    plt.xlabel("Hour of the day")
+    plt.ylabel("Average Score")
+    plt.title("Average Score of Comments in Each Hour")
+    plt.show()
+    plt.bar(hours,avg_score["submissions"])
+    plt.xlabel("Hour of the day")
+    plt.ylabel("Average Score")
+    plt.title("Average Score of Submissions in Each Hour")
     plt.show()
 def plot_deleted_survived():
     _,_,txts=plt.pie([len(data["deleted"]),len(data["survived"])],
